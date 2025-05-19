@@ -1,9 +1,44 @@
+"use client"
 import Image from "next/image"
 import Link from "next/link"
+import { useState } from "react"
+import { ShoppingBag } from "lucide-react"
+import { useToast } from "./ui/use-toast"
+import { Button } from "@/components/ui/button"
+import { useCart } from "@/lib/cart-context"
 import type { Product } from "@/lib/types"
-import AddToCartButton from "./add-to-cart-button"
 
 export default function ProductCard({ product }: { product: Product }) {
+  const { toast } = useToast();
+  const { addToCart, loading } = useCart();
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation
+    
+    try {
+      setIsAdding(true);
+      await addToCart(product);
+      
+      toast({
+        title: "Added to cart",
+        description: `${product.name} has been added to your cart.`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      
+      toast({
+        title: "Error",
+        description: "Could not add item to cart. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   return (
     <div className="group relative overflow-hidden rounded-lg border">
       <Link href={`/products/${product.id}`} className="block aspect-square overflow-hidden">
@@ -22,7 +57,15 @@ export default function ProductCard({ product }: { product: Product }) {
         <p className="mt-1 text-sm text-gray-500 line-clamp-2">{product.description}</p>
         <div className="mt-2 flex items-center justify-between">
           <span className="font-semibold">${product.price.toFixed(2)}</span>
-          <AddToCartButton product={product} variant="outline" size="sm" />
+          <Button 
+            onClick={handleAddToCart} 
+            variant="outline" 
+            size="sm"
+            disabled={isAdding || loading}
+          >
+            <ShoppingBag className="mr-2 h-4 w-4" />
+            {isAdding ? "Adding..." : "Add"}
+          </Button>
         </div>
       </div>
     </div>

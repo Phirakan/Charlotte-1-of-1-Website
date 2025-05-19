@@ -8,29 +8,64 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff } from 'lucide-react';
 
-export default function LoginPage() {
-  const { login, loading, error } = useAuth();
+export default function RegisterPage() {
+  const { register, loading, error } = useAuth();
   
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login({
+    setValidationError(null);
+    
+    // Validate form
+    if (!username.trim()) {
+      setValidationError('Username is required');
+      return;
+    }
+    
+    if (!email.trim()) {
+      setValidationError('Email is required');
+      return;
+    }
+    
+    if (!password) {
+      setValidationError('Password is required');
+      return;
+    }
+    
+    if (password.length < 6) {
+      setValidationError('Password must be at least 6 characters long');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      setValidationError('Passwords do not match');
+      return;
+    }
+    
+    await register({
       username,
+      email,
       password,
+      confirm_password: confirmPassword,
     });
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
       <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-6 dark:text-white">Login</h1>
+        <h1 className="text-2xl font-bold text-center mb-6 dark:text-white">Create an Account</h1>
         
-        {error && (
+        {(error || validationError) && (
           <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {validationError || error}
+            </AlertDescription>
           </Alert>
         )}
         
@@ -43,6 +78,19 @@ export default function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your username"
+              disabled={loading}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input 
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
               disabled={loading}
               required
             />
@@ -70,19 +118,32 @@ export default function LoginPage() {
             </div>
           </div>
           
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input 
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm your password"
+              disabled={loading}
+              required
+            />
+          </div>
+          
           <Button 
             type="submit" 
             className="w-full" 
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Creating account...' : 'Register'}
           </Button>
         </form>
         
         <p className="text-center text-sm mt-6 text-gray-500 dark:text-gray-400">
-          Dont have an account yet?{' '}
-          <Link href="/register" className="text-primary font-medium">
-            Register
+          Already have an account?{' '}
+          <Link href="/login" className="text-primary font-medium">
+            Login
           </Link>
         </p>
       </div>
