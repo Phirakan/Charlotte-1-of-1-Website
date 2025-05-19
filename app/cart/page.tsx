@@ -22,7 +22,7 @@ export default function CartPage() {
     return (
       <div className="container px-4 py-8 md:px-6 md:py-12 flex flex-col items-center justify-center min-h-[50vh]">
         <h1 className="text-3xl font-bold mb-4">Your Cart is Empty</h1>
-        <p className="text-gray-500 mb-6">Looks like you haven't added any products to your cart yet.</p>
+        <p className="text-gray-500 mb-6">Looks like you havent added any products to your cart yet.</p>
         <Link href="/products">
           <Button>Continue Shopping</Button>
         </Link>
