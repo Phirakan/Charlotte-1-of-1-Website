@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useState } from 'react';
-import { productApi } from '@/lib/api';
+import { fetchProducts } from '@/lib/products';
+import { Product } from '@/lib/types';
 import ProductCard from '@/components/product-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,16 +14,6 @@ import {
 } from '@/components/ui/select';
 import LoadingSpinner from '@/components/ui/Loading-spinner';
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  image: string;
-  category: string;
-  stock: number;
-}
-
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,26 +24,46 @@ export default function ProductsPage() {
   const [sort, setSort] = useState<string>('featured');
 
   useEffect(() => {
-    fetchProducts();
+    loadProducts();
   }, []);
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const response = await productApi.getAll();
-      setProducts(response.data);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : 'Failed to load products';
-      setError(errorMessage);
-      console.error('Error fetching products:', err);
-    } finally {
-      setLoading(false);
+const loadProducts = async () => {
+  try {
+    setLoading(true);
+    console.log('Starting to load products...');
+    const productsData = await fetchProducts();
+    console.log('Products loaded:', productsData);
+    
+    if (Array.isArray(productsData)) {
+      setProducts(productsData);
+      if (productsData.length === 0) {
+        setError('No products available');
+      } else {
+        setError(null);
+      }
+    } else {
+      console.warn('No valid products returned from API');
+      setProducts([]);
+      setError('Failed to load products: Invalid data format');
     }
-  };
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error 
+      ? err.message 
+      : 'Failed to load products';
+    setError(errorMessage);
+    console.error('Error fetching products:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const applyFilters = () => {
+    // Safety check: ensure products is an array before filtering
+    if (!Array.isArray(products)) {
+      console.error('Products is not an array:', products);
+      return [];
+    }
+    
     let filteredProducts = [...products];
     
     // Category filter
@@ -84,19 +95,20 @@ export default function ProductsPage() {
         filteredProducts.sort((a, b) => b.price - a.price);
         break;
       case 'newest':
-        // ในกรณีที่มีฟิลด์วันที่สร้าง ให้เรียงตามนั้น
-        // สำหรับตัวอย่างนี้จะไม่ได้ทำการเรียงลำดับ
+        // Default to original order
         break;
       default:
-        // 'featured' - ใช้ลำดับเดิม
+        // 'featured' - use default order
         break;
     }
     
     return filteredProducts;
   };
 
-  const displayProducts = applyFilters();
-  const categories = ['all', ...new Set(products.map(product => product.category))];
+  // Add a safety check before calling applyFilters
+  const displayProducts = Array.isArray(products) ? applyFilters() : [];
+  // Safely extract categories
+  const categories = ['all', ...new Set(Array.isArray(products) ? products.map(product => product.category) : [])];
 
   if (loading) {
     return (
@@ -111,7 +123,7 @@ export default function ProductsPage() {
       <div className="container px-4 py-8 md:px-6 md:py-12">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <p>Error: {error}</p>
-          <Button onClick={fetchProducts} className="mt-4">
+          <Button onClick={loadProducts} className="mt-4">
             Try Again
           </Button>
         </div>

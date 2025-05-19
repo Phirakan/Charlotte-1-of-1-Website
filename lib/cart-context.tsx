@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { cartApi } from '@/lib/api';
 import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
 import type { Product } from "./types"
 
 interface CartItem {
@@ -19,6 +20,7 @@ interface CartContextType {
   clearCart: () => void;
   loading: boolean;
   error: string | null;
+  requireLogin: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -27,72 +29,56 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth() || { isAuthenticated: false };
+  const router = useRouter();
 
-  // ดึงข้อมูลตะกร้าเมื่อ login สำเร็จ
+  // Fetch cart data when logged in
   useEffect(() => {
     if (isAuthenticated) {
       fetchCart();
     } else {
-      loadCartFromLocalStorage();
+      // Clear cart when logged out
+      setCart([]);
     }
   }, [isAuthenticated]);
 
-  // บันทึกตะกร้าใน localStorage สำหรับผู้ที่ไม่ได้ login
-  useEffect(() => {
-    if (!isAuthenticated && cart.length > 0) {
-      localStorage.setItem("cart", JSON.stringify(cart));
+  const requireLogin = () => {
+    if (!isAuthenticated) {
+      router.push("/login?returnTo=" + encodeURIComponent(window.location.pathname));
+      return false;
     }
-  }, [cart, isAuthenticated]);
+    return true;
+  };
 
   const fetchCart = async () => {
+    if (!isAuthenticated) return;
+    
     try {
       setLoading(true);
       setError(null);
       const response = await cartApi.getCart();
-      setCart(response.data.cart.items);
+      if (response && response.data && response.data.cart && Array.isArray(response.data.cart.items)) {
+        setCart(response.data.cart.items);
+      } else {
+        setCart([]);
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Could not fetch cart');
       console.error('Error fetching cart:', err);
+      setCart([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadCartFromLocalStorage = () => {
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      try {
-        setCart(JSON.parse(savedCart));
-      } catch (error) {
-        console.error("Failed to parse cart from localStorage:", error);
-      }
-    }
-  };
-
   const addToCart = async (product: Product) => {
+    if (!requireLogin()) return;
+    
     try {
       setLoading(true);
       setError(null);
-
-      if (isAuthenticated) {
-        // ส่งไปยัง API
-        await cartApi.addToCart(product.id, 1);
-        await fetchCart(); // ดึงข้อมูลตะกร้าที่อัปเดตแล้ว
-      } else {
-        // จัดการในเบราว์เซอร์
-        setCart((prevCart) => {
-          const existingItem = prevCart.find((item) => item.product.id === product.id);
-
-          if (existingItem) {
-            return prevCart.map((item) =>
-              item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
-            );
-          } else {
-            return [...prevCart, { id: Date.now(), product, quantity: 1 }];
-          }
-        });
-      }
+      await cartApi.addToCart(product.id, 1);
+      await fetchCart();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to add to cart');
       console.error('Error adding to cart:', err);
@@ -102,19 +88,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeFromCart = async (productId: string) => {
+    if (!requireLogin()) return;
+    
     try {
       setLoading(true);
       setError(null);
-
-      if (isAuthenticated) {
-        // หาค่า item ID ในตะกร้า
-        const cartItem = cart.find(item => item.product.id === productId);
-        if (cartItem) {
-          await cartApi.removeFromCart(cartItem.id.toString());
-          await fetchCart();
-        }
-      } else {
-        setCart((prevCart) => prevCart.filter((item) => item.product.id !== productId));
+      const cartItem = Array.isArray(cart) ? cart.find(item => item.product.id === productId) : undefined;
+      if (cartItem) {
+        await cartApi.removeFromCart(cartItem.id.toString());
+        await fetchCart();
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to remove from cart');
@@ -125,6 +107,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const updateQuantity = async (productId: string, quantity: number) => {
+    if (!requireLogin()) return;
+    
     try {
       setLoading(true);
       setError(null);
@@ -133,19 +117,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return removeFromCart(productId);
       }
 
-      if (isAuthenticated) {
-        // หาค่า item ID ในตะกร้า
-        const cartItem = cart.find(item => item.product.id === productId);
-        if (cartItem) {
-          await cartApi.updateCartItem(cartItem.id.toString(), quantity);
-          await fetchCart();
-        }
-      } else {
-        setCart((prevCart) => 
-          prevCart.map((item) => 
-            item.product.id === productId ? { ...item, quantity } : item
-          )
-        );
+      const cartItem = Array.isArray(cart) ? cart.find(item => item.product.id === productId) : undefined;
+      if (cartItem) {
+        await cartApi.updateCartItem(cartItem.id.toString(), quantity);
+        await fetchCart();
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to update cart');
@@ -156,17 +131,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const clearCart = async () => {
+    if (!requireLogin()) return;
+    
     try {
       setLoading(true);
       setError(null);
-
-      if (isAuthenticated) {
-        await cartApi.clearCart();
-        setCart([]);
-      } else {
-        setCart([]);
-        localStorage.removeItem("cart");
-      }
+      await cartApi.clearCart();
+      setCart([]);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to clear cart');
       console.error('Error clearing cart:', err);
@@ -178,13 +149,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return (
     <CartContext.Provider 
       value={{ 
-        cart, 
+        cart: Array.isArray(cart) ? cart : [],
         addToCart, 
         removeFromCart, 
         updateQuantity, 
         clearCart,
         loading,
-        error
+        error,
+        requireLogin
       }}
     >
       {children}

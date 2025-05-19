@@ -1,100 +1,138 @@
-import type { Product } from "./types"
+// lib/products.ts
+import { Product, Size, ProductSize } from './types';
 
-export const products: Product[] = [
-  {
-    id: "1",
-    name: "Classic White T-Shirt",
-    price: 29.99,
-    description: "A timeless white t-shirt made from premium cotton for everyday comfort.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "clothing",
-  },
-  {
-    id: "2",
-    name: "Slim Fit Jeans",
-    price: 59.99,
-    description: "Modern slim fit jeans with a comfortable stretch for all-day wear.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "clothing",
-  },
-  {
-    id: "3",
-    name: "Leather Sneakers",
-    price: 89.99,
-    description: "Minimalist leather sneakers that go with everything in your wardrobe.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "footwear",
-  },
-  {
-    id: "4",
-    name: "Wool Blend Sweater",
-    price: 79.99,
-    description: "A cozy wool blend sweater perfect for cooler days.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "clothing",
-  },
-  {
-    id: "5",
-    name: "Canvas Backpack",
-    price: 49.99,
-    description: "Durable canvas backpack with multiple compartments for everyday use.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "accessories",
-  },
-  {
-    id: "6",
-    name: "Aviator Sunglasses",
-    price: 129.99,
-    description: "Classic aviator sunglasses with UV protection and polarized lenses.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "accessories",
-  },
-  {
-    id: "7",
-    name: "Denim Jacket",
-    price: 89.99,
-    description: "Versatile denim jacket that never goes out of style.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "clothing",
-  },
-  {
-    id: "8",
-    name: "Leather Belt",
-    price: 39.99,
-    description: "Premium leather belt with a classic buckle design.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "accessories",
-  },
-  {
-    id: "9",
-    name: "Cashmere Scarf",
-    price: 69.99,
-    description: "Luxuriously soft cashmere scarf to keep you warm in style.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "accessories",
-  },
-  {
-    id: "10",
-    name: "Striped Button-Up Shirt",
-    price: 54.99,
-    description: "A versatile striped button-up shirt for both casual and formal occasions.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "clothing",
-  },
-  {
-    id: "11",
-    name: "Leather Wallet",
-    price: 45.99,
-    description: "Compact leather wallet with multiple card slots and a bill compartment.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "accessories",
-  },
-  {
-    id: "12",
-    name: "Knit Beanie",
-    price: 24.99,
-    description: "Warm knit beanie perfect for cold weather days.",
-    image: "/placeholder.svg?height=300&width=300",
-    category: "accessories",
-  },
-]
+// Export an empty array as the default products
+export const products: Product[] = [];
+
+// Function to fetch all available sizes
+export async function fetchSizes(): Promise<Size[]> {
+  try {
+    const response = await fetch('http://127.0.0.1:8080/sizes', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data && Array.isArray(data.sizes)) {
+      return data.sizes;
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error fetching sizes:', error);
+    return [];
+  }
+}
+
+// Function to fetch products from the API
+export async function fetchProducts(): Promise<Product[]> {
+  try {
+    console.log('Fetching products from API...');
+    const response = await fetch('http://127.0.0.1:8080/products', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      console.error(`API returned status: ${response.status}`);
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('API response data:', data);
+    
+    // API returns { products: [...] }
+    if (data && Array.isArray(data.products)) {
+      // Transform the API response to match our expected Product interface
+      return data.products.map((item: any) => ({
+        id: String(item.id), // Convert number to string
+        name: item.name,
+        price: parseFloat(item.price) || 0, // Ensure price is a number
+        description: item.description || '',
+        // Use placeholder image since API doesn't provide images
+        image: "/placeholder.svg?height=300&width=300",
+        // Set a default category since API doesn't provide one
+        category: "clothing",
+        // Add size information
+        sizes: Array.isArray(item.sizes) ? item.sizes.map((size: any) => ({
+          size_id: size.size_id,
+          size_name: size.size_name,
+          stock: size.stock
+        })) : [],
+        // Add any other fields needed
+        stock: item.stock || 0
+      }));
+    }
+    
+    // If data exists but isn't in the expected format, log it and return empty array
+    console.error('Unexpected data format:', data);
+    return [];
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+}
+
+// Function to fetch a single product by ID
+export async function fetchProductById(id: string): Promise<Product | null> {
+  try {
+    console.log(`Fetching product with ID ${id}...`);
+    const response = await fetch(`http://127.0.0.1:8080/products/${id}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      console.error(`API returned status: ${response.status}`);
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Product data:', data);
+    
+    // API might return { product: {...} }
+    let productData = data;
+    if (data && data.product) {
+      productData = data.product;
+    }
+    
+    // Transform the API response to match our expected Product interface
+    if (productData && typeof productData === 'object') {
+      return {
+        id: String(productData.id), // Convert number to string
+        name: productData.name || '',
+        price: parseFloat(productData.price) || 0,
+        description: productData.description || '',
+        // Use placeholder image since API doesn't provide images
+        image: "/placeholder.svg?height=300&width=300",
+        // Set a default category since API doesn't provide one
+        category: "clothing",
+        // Add size information
+        sizes: Array.isArray(productData.sizes) ? productData.sizes.map((size: any) => ({
+          size_id: size.size_id,
+          size_name: size.size_name,
+          stock: size.stock
+        })) : [],
+        // Add any other fields needed
+        stock: productData.stock || 0
+      };
+    }
+    
+    console.error('Unexpected product data format:', data);
+    return null;
+  } catch (error) {
+    console.error(`Error fetching product with ID ${id}:`, error);
+    return null;
+  }
+}
