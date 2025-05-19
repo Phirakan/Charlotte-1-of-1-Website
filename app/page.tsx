@@ -1,11 +1,34 @@
+"use client"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-
 import { Button } from "@/components/ui/button"
 import ProductCard from "@/components/product-card"
-import { products } from "@/lib/products"
+import { fetchProducts } from "@/lib/products"
+import { Product } from "@/lib/types"
+import LoadingSpinner from "@/components/ui/Loading-spinner"
 
 export default function Home() {
-  const featuredProducts = products.slice(0, 4)
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        setLoading(true);
+        const products = await fetchProducts();
+        setFeaturedProducts(products.slice(0, 4)); // Get first 4 products as featured
+        setError(null);
+      } catch (err) {
+        console.error("Error loading products:", err);
+        setError("Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProducts();
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -54,11 +77,26 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <LoadingSpinner />
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-red-500 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+            </div>
+          ) : featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No featured products available.</p>
+            </div>
+          )}
           <div className="flex justify-center mt-10">
             <Link href="/products">
               <Button variant="outline" size="lg">

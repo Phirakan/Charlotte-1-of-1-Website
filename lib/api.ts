@@ -7,6 +7,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: false, 
 });
 
 // เพิ่ม interceptor สำหรับแนบ token ในทุก request

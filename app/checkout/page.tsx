@@ -1,12 +1,12 @@
-// pages/checkout.tsx
+"use client"
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation'; // Updated to next/navigation
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectRoute';
 import { useCart } from '@/lib/cart-context';
 import { shippingApi, orderApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group.tsx";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from '@/components/ui/label';
 import LoadingSpinner from '@/components/ui/Loading-spinner';
 
@@ -46,17 +46,18 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
       const response = await shippingApi.getAddresses();
-      setAddresses(response.data.addresses);
+      setAddresses(response.data.addresses || []);
       
       // Set default address if available
-      const defaultAddress = response.data.addresses.find((addr: ShippingAddress) => addr.is_default);
+      const defaultAddress = response.data.addresses?.find((addr: ShippingAddress) => addr.is_default);
       if (defaultAddress) {
         setSelectedAddressId(defaultAddress.id);
-      } else if (response.data.addresses.length > 0) {
+      } else if (response.data.addresses?.length > 0) {
         setSelectedAddressId(response.data.addresses[0].id);
       }
     } catch (err) {
       console.error('Error fetching addresses:', err);
+      setAddresses([]);
     } finally {
       setLoading(false);
     }
@@ -80,11 +81,8 @@ export default function CheckoutPage() {
       setError(null);
       
       const checkoutData = {
-        shipping_address_id: selectedAddressId,
+        shipping_address_id: selectedAddressId || undefined,
       };
-      
-      // If using a new address, we would include shipping_address data
-      // from a form, but we're not implementing the full form in this example
       
       const response = await orderApi.checkout(checkoutData);
       

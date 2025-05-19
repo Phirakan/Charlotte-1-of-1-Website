@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Trash2 } from "lucide-react"
@@ -8,21 +8,35 @@ import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCart } from "@/lib/cart-context"
+import { useAuth } from "@/app/context/AuthContext"
+import { useRouter } from "next/navigation"
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity, clearCart } = useCart()
-  const [subtotal, setSubtotal] = useState(0)
+  const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
+  const { isAuthenticated } = useAuth() || { isAuthenticated: false };
+  const router = useRouter();
+  
+  const [subtotal, setSubtotal] = useState(0);
 
   useEffect(() => {
-    const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-    setSubtotal(total)
-  }, [cart])
+    if (!isAuthenticated) {
+      router.push("/login?returnTo=/cart");
+      return;
+    }
+    
+    const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    setSubtotal(total);
+  }, [cart, isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null; // Will redirect in useEffect
+  }
 
   if (cart.length === 0) {
     return (
       <div className="container px-4 py-8 md:px-6 md:py-12 flex flex-col items-center justify-center min-h-[50vh]">
         <h1 className="text-3xl font-bold mb-4">Your Cart is Empty</h1>
-        <p className="text-gray-500 mb-6">Looks like you havent added any products to your cart yet.</p>
+        <p className="text-gray-500 mb-6">Looks like you haven't added any products to your cart yet.</p>
         <Link href="/products">
           <Button>Continue Shopping</Button>
         </Link>

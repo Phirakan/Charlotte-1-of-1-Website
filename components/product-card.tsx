@@ -6,11 +6,13 @@ import { ShoppingBag } from "lucide-react"
 import { useToast } from "./ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/lib/cart-context"
+import { useAuth } from "@/app/context/AuthContext"
 import type { Product } from "@/lib/types"
 
 export default function ProductCard({ product }: { product: Product }) {
   const { toast } = useToast();
   const { addToCart, loading } = useCart();
+  const { isAuthenticated } = useAuth() || { isAuthenticated: false };
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAddToCart = async (e: React.MouseEvent) => {

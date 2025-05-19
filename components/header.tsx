@@ -16,12 +16,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export default function Header() {
-  const { cart } = useCart()
+  // Add a null check for cart
+  const { cart = [] } = useCart() || { cart: [] };
   const { user, logout, isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0)
+  // Add safety check with optional chaining and default to empty array if cart is null
+  const totalItems = Array.isArray(cart) 
+    ? cart.reduce((sum, item) => sum + item.quantity, 0) 
+    : 0;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
