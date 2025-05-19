@@ -3,17 +3,17 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import { ShoppingBag } from "lucide-react"
-import { useToast } from "./ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/lib/cart-context"
 import { useAuth } from "@/app/context/AuthContext"
 import type { Product } from "@/lib/types"
+import { useAlert } from "@/app/hooks/useAlert"
 
 export default function ProductCard({ product }: { product: Product }) {
-  const { toast } = useToast();
   const { addToCart, loading } = useCart();
   const { isAuthenticated } = useAuth() || { isAuthenticated: false };
   const [isAdding, setIsAdding] = useState(false);
+  const { showSuccess, showError } = useAlert(); // เพิ่มบรรทัดนี้
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent navigation
@@ -22,20 +22,13 @@ export default function ProductCard({ product }: { product: Product }) {
       setIsAdding(true);
       await addToCart(product);
       
-      toast({
-        title: "Added to cart",
-        description: `${product.name} has been added to your cart.`,
-        duration: 3000,
-      });
+      // แสดง SweetAlert แทน toast
+      showSuccess(`${product.name} has been added to your cart.`);
     } catch (error) {
       console.error("Error adding to cart:", error);
       
-      toast({
-        title: "Error",
-        description: "Could not add item to cart. Please try again.",
-        variant: "destructive",
-        duration: 3000,
-      });
+      // แสดงข้อความเมื่อเกิดข้อผิดพลาด
+      showError("Could not add item to cart. Please try again.");
     } finally {
       setIsAdding(false);
     }
