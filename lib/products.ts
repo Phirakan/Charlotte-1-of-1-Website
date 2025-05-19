@@ -99,7 +99,7 @@ export async function fetchProductById(id: string): Promise<Product | null> {
     }
     
     const data = await response.json();
-    console.log('Product data:', data);
+    console.log('Raw API response:', data);
     
     // API might return { product: {...} }
     let productData = data;
@@ -107,9 +107,12 @@ export async function fetchProductById(id: string): Promise<Product | null> {
       productData = data.product;
     }
     
+    console.log('Product data after extraction:', productData);
+    console.log('Sizes data:', productData.sizes);
+    
     // Transform the API response to match our expected Product interface
     if (productData && typeof productData === 'object') {
-      return {
+      const product = {
         id: String(productData.id), // Convert number to string
         name: productData.name || '',
         price: parseFloat(productData.price) || 0,
@@ -127,6 +130,9 @@ export async function fetchProductById(id: string): Promise<Product | null> {
         // Add any other fields needed
         stock: productData.stock || 0
       };
+      
+      console.log('Processed product object:', product);
+      return product;
     }
     
     console.error('Unexpected product data format:', data);

@@ -10,6 +10,7 @@ import { useAuth } from "@/app/context/AuthContext"
 import { fetchProductById } from "@/lib/products"
 import { Product, ProductSize } from "@/lib/types"
 import LoadingSpinner from "@/components/ui/Loading-spinner"
+import { useAlert } from "@/app/hooks/useAlert"
 
 export default function ProductPage({ params }: { params: { id: string } }) {
   const [product, setProduct] = useState<Product | null>(null)
@@ -21,22 +22,33 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const { isAuthenticated } = useAuth() || { isAuthenticated: false }
   const [isAdding, setIsAdding] = useState(false)
   const router = useRouter()
+  const productId = params.id
+  const { showSuccess, showError } = useAlert()
 
-  useEffect(() => {
+  
+useEffect(() => {
     async function loadProduct() {
       try {
         setLoading(true)
-        const productData = await fetchProductById(params.id)
+        // ใช้ productId ที่เก็บไว้แล้วในตัวแปร แทนที่จะใช้ params.id โดยตรง
+        const productData = await fetchProductById(productId)
+        
+        console.log("Product data loaded:", productData) // เพิ่ม log ข้อมูลสินค้า
+        
         if (!productData) {
           notFound()
         }
         setProduct(productData)
         
+        // Check sizes data
+        console.log("Product sizes:", productData?.sizes)
+        
         // If product has sizes, select the first available size by default
-        if (productData.sizes && productData.sizes.length > 0) {
+        if (productData?.sizes && productData.sizes.length > 0) {
           // Find the first size with stock > 0
           const availableSize = productData.sizes.find(size => size.stock > 0)
           if (availableSize) {
+            console.log("Setting default size:", availableSize)
             setSelectedSize(availableSize)
           }
         }
@@ -49,7 +61,44 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     }
     
     loadProduct()
-  }, [params.id])
+  }, [productId])
+
+useEffect(() => {
+    async function loadProduct() {
+      try {
+        setLoading(true)
+        // ใช้ productId ที่เก็บไว้แล้วในตัวแปร แทนที่จะใช้ params.id โดยตรง
+        const productData = await fetchProductById(productId)
+        
+        console.log("Product data loaded:", productData) // เพิ่ม log ข้อมูลสินค้า
+        
+        if (!productData) {
+          notFound()
+        }
+        setProduct(productData)
+        
+        // Check sizes data
+        console.log("Product sizes:", productData?.sizes)
+        
+        // If product has sizes, select the first available size by default
+        if (productData?.sizes && productData.sizes.length > 0) {
+          // Find the first size with stock > 0
+          const availableSize = productData.sizes.find(size => size.stock > 0)
+          if (availableSize) {
+            console.log("Setting default size:", availableSize)
+            setSelectedSize(availableSize)
+          }
+        }
+      } catch (err) {
+        console.error("Error loading product:", err)
+        setError("Failed to load product details")
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadProduct()
+  }, [productId])
 
   if (loading) {
     return (
@@ -69,7 +118,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   }
 
   const increaseQuantity = () => {
-    // Check if we can increase quantity based on available stock
     if (selectedSize && quantity < selectedSize.stock) {
       setQuantity(prev => prev + 1)
     } else if (!selectedSize && product.stock && quantity < product.stock) {
@@ -103,11 +151,12 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       await addToCart(productToAdd)
       
       // Show confirmation
-      alert(`${product.name} (${selectedSize ? selectedSize.size_name : ''}) added to cart!`);
+      showSuccess(`${product.name} (${selectedSize ? selectedSize.size_name : ''}) added to cart!`);
     } catch (error) {
-      console.error("Error adding to cart:", error)
+      console.error("Error adding to cart:", error);
+      showError("Failed to add product to cart. Please try again."); 
     } finally {
-      setIsAdding(false)
+      setIsAdding(false);
     }
   }
   
@@ -119,17 +168,17 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   return (
     <div className="container px-4 py-8 md:px-6 md:py-12">
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Product Image */}
-        <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
-          <Image
-            src={product.image || "/placeholder.svg"}
-            alt={product.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 50vw"
-            priority
-          />
-        </div>
+       {/* Product Image */}
+      <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+        <Image
+         src={product.image || "/placeholder.svg"}
+         alt={product.name}
+         fill
+         className="object-cover"
+         sizes="(max-width: 768px) 100vw, 50vw"
+         priority
+        />
+      </div>
 
         {/* Product Details */}
         <div className="flex flex-col space-y-6">
@@ -145,29 +194,29 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
           {/* Sizes Section */}
           {product.sizes && product.sizes.length > 0 && (
-            <div>
-              <h2 className="font-medium mb-2">Size</h2>
+           <div>
+             <h2 className="font-medium mb-2">Size</h2>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((size) => (
-                  <Button 
+               {product.sizes.map((size) => (
+                 <Button 
                     key={size.size_id} 
-                    variant={selectedSize?.size_id === size.size_id ? "default" : "outline"} 
-                    className={`h-10 w-10 ${size.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                     variant={selectedSize?.size_id === size.size_id ? "default" : "outline"} 
+                     className={`h-10 w-10 ${size.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => size.stock > 0 && setSelectedSize(size)}
-                    disabled={size.stock <= 0}
-                  >
-                    {size.size_name}
-                  </Button>
-                ))}
-              </div>
-              {selectedSize && (
-                <p className="text-sm text-gray-500 mt-2">
-                  {selectedSize.stock > 0 
-                    ? `${selectedSize.stock} in stock` 
-                    : 'Out of stock'}
+                   disabled={size.stock <= 0}
+                 >
+                   {size.size_name}
+                 </Button>
+               ))}
+             </div>
+             {selectedSize && (
+               <p className="text-sm text-gray-500 mt-2">
+                 {selectedSize.stock > 0 
+                   ? `${selectedSize.stock} in stock` 
+                   : 'Out of stock'}
                 </p>
-              )}
-            </div>
+             )}
+             </div>
           )}
 
           <div>
