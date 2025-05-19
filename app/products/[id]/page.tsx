@@ -168,17 +168,17 @@ useEffect(() => {
   return (
     <div className="container px-4 py-8 md:px-6 md:py-12">
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Product Image */}
-        <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
-          <Image
-            src={product.image || "/placeholder.svg"}
-            alt={product.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 50vw"
-            priority
-          />
-        </div>
+       {/* Product Image */}
+      <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+        <Image
+         src={product.image || "/placeholder.svg"}
+         alt={product.name}
+         fill
+         className="object-cover"
+         sizes="(max-width: 768px) 100vw, 50vw"
+         priority
+        />
+      </div>
 
         {/* Product Details */}
         <div className="flex flex-col space-y-6">
