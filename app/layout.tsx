@@ -11,7 +11,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "StyleShop - Modern Fashion E-commerce",
+  title: "Charlotte 1 Of 1 - Modern Fashion E-commerce",
   description: "Shop the latest trends in fashion with StyleShop",
 }
 
