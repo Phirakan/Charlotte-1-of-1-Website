@@ -2,15 +2,22 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, Search, ShoppingBag, User, X } from "lucide-react"
-
+import { Menu, Search, ShoppingBag, User, X, LogOut } from "lucide-react"
+import { useAuth } from "@/app/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCart } from "@/lib/cart-context"
 import { ModeToggle } from "./model-toggle"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 
 export default function Header() {
   const { cart } = useCart()
+  const { user, logout, isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
@@ -69,12 +76,38 @@ export default function Header() {
 
           <ModeToggle />
 
-          <Link href="/account">
-            <Button variant="ghost" size="icon">
-              <User className="h-5 w-5" />
-              <span className="sr-only">Account</span>
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                  <span className="sr-only">Account</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  <span className="font-medium">{user?.username}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link href="/account" className="w-full">My Account</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link href="/orders" className="w-full">Orders</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/login">
+              <Button variant="ghost" size="icon">
+                <User className="h-5 w-5" />
+                <span className="sr-only">Login</span>
+              </Button>
+            </Link>
+          )}
 
           <Link href="/cart" className="relative">
             <Button variant="ghost" size="icon">
@@ -96,7 +129,7 @@ export default function Header() {
           <div className="flex h-16 items-center justify-between border-b px-4">
             <Link href="/" className="flex items-center space-x-2">
               <ShoppingBag className="h-6 w-6" />
-              <span className="font-bold">StyleShop</span>
+              <span className="font-bold">Charlotte 1 of 1</span>
             </Link>
             <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)}>
               <X className="h-6 w-6" />
@@ -117,12 +150,43 @@ export default function Header() {
             <Link href="#" className="flex items-center py-3 hover:text-primary" onClick={() => setIsMenuOpen(false)}>
               Categories
             </Link>
-            <Link href="#" className="flex items-center py-3 hover:text-primary" onClick={() => setIsMenuOpen(false)}>
+            <Link href="/About" className="flex items-center py-3 hover:text-primary" onClick={() => setIsMenuOpen(false)}>
               About
             </Link>
             <Link href="#" className="flex items-center py-3 hover:text-primary" onClick={() => setIsMenuOpen(false)}>
               Contact
             </Link>
+            {!isAuthenticated && (
+              <>
+                <div className="h-px bg-border my-2"></div>
+                <Link href="/login" className="flex items-center py-3 hover:text-primary" onClick={() => setIsMenuOpen(false)}>
+                  Login
+                </Link>
+                <Link href="/register" className="flex items-center py-3 hover:text-primary" onClick={() => setIsMenuOpen(false)}>
+                  Register
+                </Link>
+              </>
+            )}
+            {isAuthenticated && (
+              <>
+                <div className="h-px bg-border my-2"></div>
+                <Link href="/account" className="flex items-center py-3 hover:text-primary" onClick={() => setIsMenuOpen(false)}>
+                  My Account
+                </Link>
+                <Link href="/orders" className="flex items-center py-3 hover:text-primary" onClick={() => setIsMenuOpen(false)}>
+                  Orders
+                </Link>
+                <button 
+                  className="flex items-center py-3 hover:text-primary text-left" 
+                  onClick={() => {
+                    logout();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  Logout
+                </button>
+              </>
+            )}
           </nav>
         </div>
       )}
