@@ -71,21 +71,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addToCart = async (product: Product) => {
-    if (!requireLogin()) return;
+const addToCart = async (productData: any) => {
+  if (!requireLogin()) return;
+  
+  try {
+    setLoading(true);
+    setError(null);
     
-    try {
-      setLoading(true);
-      setError(null);
-      await cartApi.addToCart(product.id, 1);
-      await fetchCart();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add to cart');
-      console.error('Error adding to cart:', err);
-    } finally {
-      setLoading(false);
+    // Extract the needed information
+    const productId = parseInt(productData.id, 10);
+    const quantity = productData.quantity || 1;
+    const sizeId = productData.selectedSizeId;
+    
+    console.log('Adding to cart:', { productId, quantity, sizeId });
+    
+    if (isNaN(productId)) {
+      throw new Error("Invalid product ID");
     }
-  };
+    
+    // If the product has a selected size, include it in the request
+    if (sizeId) {
+      await cartApi.addToCart(productId, quantity, sizeId);
+    } else {
+      await cartApi.addToCart(productId, quantity);
+    }
+    
+    await fetchCart();
+  } catch (err: any) {
+    console.error('Error details:', err.response?.data);
+    setError(err.response?.data?.error || 'Failed to add to cart');
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
 
   const removeFromCart = async (productId: string) => {
     if (!requireLogin()) return;

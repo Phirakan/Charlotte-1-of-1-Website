@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
 import Image from "next/image"
 import { notFound, useRouter } from "next/navigation"
 import { Minus, Plus } from "lucide-react"
@@ -12,7 +13,11 @@ import { Product, ProductSize } from "@/lib/types"
 import LoadingSpinner from "@/components/ui/Loading-spinner"
 import { useAlert } from "@/app/hooks/useAlert"
 
-export default function ProductPage({ params }: { params: { id: string } }) {
+export default function ProductPage() {
+  // Use the useParams hook instead of accessing params directly
+  const params = useParams()
+  const productId = params?.id as string
+  
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -22,55 +27,17 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const { isAuthenticated } = useAuth() || { isAuthenticated: false }
   const [isAdding, setIsAdding] = useState(false)
   const router = useRouter()
-  const productId = params.id
   const { showSuccess, showError } = useAlert()
 
-  
-useEffect(() => {
-    async function loadProduct() {
-      try {
-        setLoading(true)
-        // ใช้ productId ที่เก็บไว้แล้วในตัวแปร แทนที่จะใช้ params.id โดยตรง
-        const productData = await fetchProductById(productId)
-        
-        console.log("Product data loaded:", productData) // เพิ่ม log ข้อมูลสินค้า
-        
-        if (!productData) {
-          notFound()
-        }
-        setProduct(productData)
-        
-        // Check sizes data
-        console.log("Product sizes:", productData?.sizes)
-        
-        // If product has sizes, select the first available size by default
-        if (productData?.sizes && productData.sizes.length > 0) {
-          // Find the first size with stock > 0
-          const availableSize = productData.sizes.find(size => size.stock > 0)
-          if (availableSize) {
-            console.log("Setting default size:", availableSize)
-            setSelectedSize(availableSize)
-          }
-        }
-      } catch (err) {
-        console.error("Error loading product:", err)
-        setError("Failed to load product details")
-      } finally {
-        setLoading(false)
-      }
-    }
+  useEffect(() => {
+    if (!productId) return;
     
-    loadProduct()
-  }, [productId])
-
-useEffect(() => {
     async function loadProduct() {
       try {
         setLoading(true)
-        // ใช้ productId ที่เก็บไว้แล้วในตัวแปร แทนที่จะใช้ params.id โดยตรง
         const productData = await fetchProductById(productId)
         
-        console.log("Product data loaded:", productData) // เพิ่ม log ข้อมูลสินค้า
+        console.log("Product data loaded:", productData)
         
         if (!productData) {
           notFound()
@@ -134,24 +101,22 @@ useEffect(() => {
   const handleAddToCart = async () => {
     if (!selectedSize && product.sizes && product.sizes.length > 0) {
       // If product has sizes but none selected, show an error
-      alert("Please select a size before adding to cart");
+      showError("Please select a size before adding to cart");
       return;
     }
     
     try {
-      setIsAdding(true)
+      setIsAdding(true);
       
-      // Create a modified product with selected size information
-      const productToAdd = {
+      // Add to cart with appropriate information
+      await addToCart({
         ...product,
-        selectedSize: selectedSize ? selectedSize.size_name : null
-      };
-      
-      // This will redirect to login if not authenticated
-      await addToCart(productToAdd)
+        selectedSizeId: selectedSize ? selectedSize.size_id : undefined,
+        quantity
+      });
       
       // Show confirmation
-      showSuccess(`${product.name} (${selectedSize ? selectedSize.size_name : ''}) added to cart!`);
+      showSuccess(`${product.name} ${selectedSize ? `(${selectedSize.size_name})` : ''} added to cart!`);
     } catch (error) {
       console.error("Error adding to cart:", error);
       showError("Failed to add product to cart. Please try again."); 

@@ -16,6 +16,10 @@ export interface Product {
   sizes?: ProductSize[];
   created_at?: string;
   updated_at?: string;
+  
+  // Add these for cart operationsw
+  quantity?: number;
+  selectedSizeId?: number;
 }
 
 export interface Size {

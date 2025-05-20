@@ -42,9 +42,20 @@ export const productApi = {
 
 // Cart APIs
 export const cartApi = {
-  getCart: () => api.get('/cart'),
-  addToCart: (productId: string, quantity: number) => 
-    api.post('/cart/items', { product_id: productId, quantity }),
+getCart: () => api.get('/cart'),
+  addToCart: (productId: number, quantity: number, sizeId?: number) => {
+    const payload: any = { 
+      product_id: productId, 
+      quantity
+    };
+    
+    // Only include size_id if it's provided
+    if (sizeId !== undefined) {
+      payload.size_id = sizeId;
+    }
+    
+    return api.post('/cart/items', payload);
+  },
   updateCartItem: (itemId: string, quantity: number) => 
     api.put(`/cart/items/${itemId}`, { quantity }),
   removeFromCart: (itemId: string) => 
