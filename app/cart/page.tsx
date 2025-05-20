@@ -37,7 +37,7 @@ export default function CartPage() {
     return (
       <div className="container px-4 py-8 md:px-6 md:py-12 flex flex-col items-center justify-center min-h-[50vh]">
         <h1 className="text-3xl font-bold mb-4">Your Cart is Empty</h1>
-        <p className="text-gray-500 mb-6">Looks like you haven't added any products to your cart yet.</p>
+        <p className="text-gray-500 mb-6">Looks like you havent added any products to your cart yet.</p>
         <Link href="/products">
           <Button>Continue Shopping</Button>
         </Link>
@@ -53,9 +53,8 @@ export default function CartPage() {
         <div className="md:col-span-2 space-y-4">
           {/* Cart Items */}
           <div className="border rounded-lg overflow-hidden">
-            <div className="hidden md:grid grid-cols-6 gap-4 p-4 bg-gray-50 font-medium">
+            <div className="hidden md:grid grid-cols-5 gap-4 p-4 bg-gray-50 font-medium">
               <div className="col-span-2">Product</div>
-              <div>Size</div> {/* Added Size column */}
               <div>Price</div>
               <div>Quantity</div>
               <div>Total</div>
@@ -63,7 +62,7 @@ export default function CartPage() {
 
             <div className="divide-y">
               {cart.map((item) => (
-                <div key={item.id} className="p-4 grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                <div key={item.product.id} className="p-4 grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                   <div className="md:col-span-2 flex items-center space-x-4">
                     <div className="relative h-20 w-20 rounded overflow-hidden bg-gray-100">
                       <Image
@@ -76,18 +75,12 @@ export default function CartPage() {
                     <div>
                       <h3 className="font-medium">{item.product.name}</h3>
                       <button
-                        onClick={() => removeFromCart(item.id.toString())}
+                        onClick={() => removeFromCart(item.product.id)}
                         className="text-sm text-red-500 flex items-center mt-1"
                       >
                         <Trash2 className="h-3 w-3 mr-1" /> Remove
                       </button>
                     </div>
-                  </div>
-
-                  {/* Size Column */}
-                  <div className="text-gray-600">
-                    <span className="md:hidden font-medium mr-2">Size:</span>
-                    {getItemSize(item)}
                   </div>
 
                   <div className="text-gray-600">
@@ -100,7 +93,7 @@ export default function CartPage() {
                       type="number"
                       min="1"
                       value={item.quantity}
-                      onChange={(e) => updateQuantity(item.id.toString(), Number.parseInt(e.target.value))}
+                      onChange={(e) => updateQuantity(item.product.id, Number.parseInt(e.target.value))}
                       className="w-20"
                     />
                   </div>
@@ -157,40 +150,4 @@ export default function CartPage() {
       </div>
     </div>
   )
-}
-
-// Helper function to get the size name from cart item
-function getItemSize(item: any) {
-  // Check if the item has a direct size property
-  if (item.size_name) {
-    return item.size_name;
-  }
-  
-  // Check if the size is stored in a size_id property
-  if (item.size_id) {
-    // You might need to fetch the size name from the size_id
-    // This is a placeholder, replace with actual implementation if needed
-    return `Size ID: ${item.size_id}`;
-  }
-  
-  // Check product for size information
-  if (item.product) {
-    // If the product has a selectedSize property
-    if (item.product.selectedSize) {
-      return item.product.selectedSize;
-    }
-    
-    // If the product stores size in selectedSizeId
-    if (item.product.selectedSizeId && item.product.sizes) {
-      const size = item.product.sizes.find(
-        (s: any) => s.size_id === item.product.selectedSizeId
-      );
-      if (size) {
-        return size.size_name;
-      }
-    }
-  }
-  
-  // If no size information is found
-  return "N/A";
 }
