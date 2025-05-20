@@ -28,7 +28,7 @@ export default function ProductCard({ product }: { product: Product }) {
       console.error("Error adding to cart:", error);
       
       // แสดงข้อความเมื่อเกิดข้อผิดพลาด
-      showError("Could not add item to cart. Please try again.");
+      showError("Could not add item to cart. Please Select Size.");
     } finally {
       setIsAdding(false);
     }
